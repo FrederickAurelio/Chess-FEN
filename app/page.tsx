@@ -123,13 +123,15 @@ function App() {
         <h2 className="text-lg mb-2">
           FEN:{" "}
           <span className="text-sm">
-            {actionState?.success
+            {actionState?.success && !isPending
               ? actionState.chessboard.fen
+              : isPending
+              ? "Calculating..."
               : actionState?.message}
           </span>
         </h2>
         <div className="flex gap-5">
-          {actionState?.success && (
+          {actionState?.success && !isPending && (
             <Anchor
               href={`https://lichess.org/analysis/${actionState.chessboard.fen}_w`}
             >
@@ -137,7 +139,7 @@ function App() {
               Play as White
             </Anchor>
           )}
-          {actionState?.success && (
+          {actionState?.success && !isPending && (
             <Anchor
               href={`https://lichess.org/analysis/${actionState.chessboard.fen}_b`}
             >
