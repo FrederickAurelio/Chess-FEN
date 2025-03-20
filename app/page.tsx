@@ -1,103 +1,105 @@
-import Image from "next/image";
+"use client";
 
-export default function Home() {
+import { Input } from "@/components/ui/input";
+import { useEffect, useRef, useState, useTransition } from "react";
+import { processImage } from "./helper";
+import { calculateFen } from "./action";
+
+function App() {
+  const [imgFile, setImgFile] = useState<File | null>(null);
+  const sobelCanvas = useRef<HTMLCanvasElement | null>(null);
+  const resultCanvas = useRef<HTMLCanvasElement | null>(null);
+  const [isPending, startTransition] = useTransition();
+
+  const handleImageFile = (file: File) => {
+    setImgFile(file);
+  };
+
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files.length > 0) {
+      handleImageFile(e.target.files[0]);
+    }
+  };
+
+  const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = "copy";
+  };
+
+  const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+      handleImageFile(e.dataTransfer.files[0]);
+    }
+  };
+
+  useEffect(() => {
+    if (!imgFile || !sobelCanvas.current || !resultCanvas.current) return;
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const img = new Image();
+      img.onload = () => {
+        processImage(img, sobelCanvas.current, resultCanvas.current);
+      };
+      img.src = event.target?.result as string;
+    };
+
+    reader.readAsDataURL(imgFile);
+  }, [imgFile]);
+
   return (
-    <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
-      <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="list-inside list-decimal text-sm/6 text-center sm:text-left font-[family-name:var(--font-geist-mono)]">
-          <li className="mb-2 tracking-[-.01em]">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] px-1 py-0.5 rounded font-[family-name:var(--font-geist-mono)] font-semibold">
-              app/page.tsx
-            </code>
-            .
-          </li>
-          <li className="tracking-[-.01em]">
-            Save and see your changes instantly.
-          </li>
-        </ol>
-
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:w-auto"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 w-full sm:w-auto md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
+    <section className="w-full h-dvh bg-amber-50 px-48 py-20">
+      <div className="flex gap-3 flex-col justify-center w-full items-center">
+        <h1 className="text-3xl">
+          Predicting Chessboard Layouts from Screenshots
+        </h1>
+        <div className="flex items-center cursor-pointer hover:scale-105 duration-100">
+          <label htmlFor="imageLoader" className="w-[35ch]">
+            Input screenshot file:
+          </label>
+          <Input
+            onChange={handleImageChange}
+            className="cursor-pointer"
+            accept="image/*"
+            id="imageLoader"
+            name="imageLoader"
+            type="file"
+          />
         </div>
-      </main>
-      <footer className="row-start-3 flex gap-[24px] flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
+        <div
+          className="cursor-pointer flex items-center justify-center border-5 rounded-3xl border-amber-950 w-[350px] h-[350px] bg-amber-100 shadow-md shadow-neutral-950"
+          onDragOver={handleDragOver}
+          onDrop={handleDrop}
+          onClick={() => document.getElementById("imageLoader")?.click()}
         >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
+          <canvas
+            className="w-full h-full rounded-2xl"
+            ref={sobelCanvas}
+            id="sobelCanvas"
           />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
+        </div>
+        <button
+          onClick={() =>
+            startTransition(() => {
+              if (resultCanvas.current) calculateFen(resultCanvas.current);
+            })
+          }
+          className="cursor-pointer shadow-md shadow-neutral-950 mt-3 px-4 bg-amber-300 border-2 rounded-lg border-amber-800 py-2 hover:shadow-sm hover:translate-y-1 text-amber-950 font-bold active:opacity-75"
         >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
-    </div>
+          Calculate FEN
+        </button>
+        <h2 className="text-lg">
+          FEN:{" "}
+          <span className="text-sm">
+            rn1qkb1r/p4ppb/1pp1pn1p/4N3/2BP2P1/1QN1P2P/PP3P2/R1B2RK1
+          </span>
+        </h2>
+
+        <canvas className="hidden" ref={resultCanvas} id="resultCanvas" />
+      </div>
+    </section>
   );
 }
+
+export default App;
