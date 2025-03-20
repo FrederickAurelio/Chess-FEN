@@ -10,3 +10,7 @@ export const middleware = async (req: NextRequest) => {
   );
   return response;
 };
+
+export const config = {
+  matcher: ['/:path*'],
+};
