@@ -26,7 +26,7 @@ if (typeof document != 'undefined') {
     var c, ctx;
     if (img.getContext) {
       c = img;
-      try { ctx = c.getContext('2d'); } catch (e) { }
+      try { ctx = c.getContext('2d'); } catch (e) { console.log(e) }
     }
     if (!ctx) {
       c = this.getCanvas(img.width, img.height);
@@ -47,7 +47,7 @@ if (typeof document != 'undefined') {
     return c;
   };
 
-  Filters.filterImage = function (filter, image, var_args) {
+  Filters.filterImage = function (filter, image) {
     var args = [this.getPixels(image)];
     for (var i = 2; i < arguments.length; i++) {
       args.push(arguments[i]);
@@ -66,15 +66,6 @@ if (typeof document != 'undefined') {
   };
 
 } else {
-
-  function onmessage(e) {
-    var ds = e.data;
-    if (!ds.length) {
-      ds = [ds];
-    }
-    postMessage(Filters.runPipeline(ds));
-  };
-
   Filters.createImageData = function (w, h) {
     return { width: w, height: h, data: this.getFloat32Array(w * h * 4) };
   };
@@ -97,7 +88,7 @@ Filters.createImageDataFloat32 = function (w, h) {
   return { width: w, height: h, data: this.getFloat32Array(w * h * 4) };
 };
 
-Filters.identity = function (pixels, args) {
+Filters.identity = function (pixels) {
   var output = Filters.createImageData(pixels.width, pixels.height);
   var dst = output.data;
   var d = pixels.data;
@@ -145,7 +136,7 @@ Filters.verticalFlip = function (pixels) {
   return output;
 };
 
-Filters.luminance = function (pixels, args) {
+Filters.luminance = function (pixels) {
   var output = Filters.createImageData(pixels.width, pixels.height);
   var dst = output.data;
   var d = pixels.data;
@@ -161,7 +152,7 @@ Filters.luminance = function (pixels, args) {
   return output;
 };
 
-Filters.grayscale = function (pixels, args) {
+Filters.grayscale = function (pixels) {
   var output = Filters.createImageData(pixels.width, pixels.height);
   var dst = output.data;
   var d = pixels.data;
@@ -176,7 +167,7 @@ Filters.grayscale = function (pixels, args) {
   return output;
 };
 
-Filters.grayscaleAvg = function (pixels, args) {
+Filters.grayscaleAvg = function (pixels) {
   var output = Filters.createImageData(pixels.width, pixels.height);
   var dst = output.data;
   var d = pixels.data;
@@ -651,7 +642,6 @@ Filters.distortSine = function (pixels, amount, yamount) {
   if (yamount == null) yamount = amount;
   var output = this.createImageData(pixels.width, pixels.height);
   var dst = output.data;
-  var d = pixels.data;
   var px = this.createImageData(1, 1).data;
   for (var y = 0; y < output.height; y++) {
     var sy = -Math.sin(y / (output.height - 1) * Math.PI * 2);
