@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import * as tf from "@tensorflow/tfjs";
 import { getLabeledPiecesAndFEN, getTiles } from "../libfn";
-import { Canvas, createCanvas, loadImage } from "canvas";
+import sharp from "sharp";
 
 const baseUrl = "http://localhost:3001";
 const frozenGraph = `${baseUrl}/frozen_model/tensorflowjs_model.pb`;
@@ -25,13 +25,17 @@ export async function POST(req: Request) {
     }
 
     const base64Data = dataURL.split(",")[1];
-    const img = await loadImage(`data:image/png;base64,${base64Data}`);
-    const canvas = createCanvas(img.width, img.height) as Canvas &
-      HTMLCanvasElement;
-    const ctx = canvas.getContext("2d");
-    ctx.drawImage(img, 0, 0);
+    const imgBuffer = Buffer.from(base64Data, "base64");
+    const { data, info } = await sharp(imgBuffer)
+      .raw()
+      .toBuffer({ resolveWithObject: true });
 
-    const imgData = tf.fromPixels(canvas).asType("float32");
+    const imgData = tf.tensor(
+      data,
+      [info.height, info.width, info.channels],
+      "float32"
+    );
+
     const tiles = getTiles(imgData);
     const output = predictor?.execute({
       Input: tiles,
