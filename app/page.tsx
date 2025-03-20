@@ -3,7 +3,7 @@
 import { Input } from "@/components/ui/input";
 import { useEffect, useRef, useState, useTransition } from "react";
 import { processImage } from "./helper";
-import { calculateFen } from "./action";
+import { calculateFen, ResponseFetchType } from "./action";
 import { FaRegChessKnight } from "react-icons/fa6";
 import { FaChessBishop } from "react-icons/fa6";
 import Button from "@/components/ui/Button";
@@ -13,19 +13,22 @@ function App() {
   const [imgFile, setImgFile] = useState<File | null>(null);
   const sobelCanvas = useRef<HTMLCanvasElement | null>(null);
   const resultCanvas = useRef<HTMLCanvasElement | null>(null);
-  const [fenValue, setFenValue] = useState<string>();
+
   const [isPending, startTransition] = useTransition();
+  const [actionState, setActionState] = useState<ResponseFetchType>();
 
   const handleCalculateFEN = async () => {
     if (imgFile && resultCanvas.current) {
       const dataURL = resultCanvas.current.toDataURL("image/png");
       try {
         const res = await calculateFen(dataURL);
-        if (res) setFenValue(res.fen);
+        setActionState(res);
       } catch (error) {
         console.error("Error calculating FEN:", error);
         // Optionally, set an error state or show a message to the user
       }
+    } else {
+      document.getElementById("imageLoader")?.click();
     }
   };
 
@@ -118,17 +121,26 @@ function App() {
           Calculate FEN
         </Button>
         <h2 className="text-lg mb-2">
-          FEN: <span className="text-sm">{fenValue}</span>
+          FEN:{" "}
+          <span className="text-sm">
+            {actionState?.success
+              ? actionState.chessboard.fen
+              : actionState?.message}
+          </span>
         </h2>
         <div className="flex gap-5">
-          {fenValue && (
-            <Anchor href={`https://lichess.org/analysis/${fenValue}_w`}>
+          {actionState?.success && (
+            <Anchor
+              href={`https://lichess.org/analysis/${actionState.chessboard.fen}_w`}
+            >
               <FaRegChessKnight size={32} />
               Play as White
             </Anchor>
           )}
-          {fenValue && (
-            <Anchor href={`https://lichess.org/analysis/${fenValue}_b`}>
+          {actionState?.success && (
+            <Anchor
+              href={`https://lichess.org/analysis/${actionState.chessboard.fen}_b`}
+            >
               <FaChessBishop size={32} />
               Play as Black
             </Anchor>
