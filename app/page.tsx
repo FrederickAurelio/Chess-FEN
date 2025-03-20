@@ -4,12 +4,30 @@ import { Input } from "@/components/ui/input";
 import { useEffect, useRef, useState, useTransition } from "react";
 import { processImage } from "./helper";
 import { calculateFen } from "./action";
+import { FaRegChessKnight } from "react-icons/fa6";
+import { FaChessBishop } from "react-icons/fa6";
+import Button from "@/components/ui/Button";
+import Anchor from "@/components/ui/Anchor";
 
 function App() {
   const [imgFile, setImgFile] = useState<File | null>(null);
   const sobelCanvas = useRef<HTMLCanvasElement | null>(null);
   const resultCanvas = useRef<HTMLCanvasElement | null>(null);
+  const [fenValue, setFenValue] = useState<string>();
   const [isPending, startTransition] = useTransition();
+
+  const handleCalculateFEN = async () => {
+    if (imgFile && resultCanvas.current) {
+      const dataURL = resultCanvas.current.toDataURL("image/png");
+      try {
+        const res = await calculateFen(dataURL);
+        if (res) setFenValue(res.fen);
+      } catch (error) {
+        console.error("Error calculating FEN:", error);
+        // Optionally, set an error state or show a message to the user
+      }
+    }
+  };
 
   const handleImageFile = (file: File) => {
     setImgFile(file);
@@ -49,18 +67,30 @@ function App() {
   }, [imgFile]);
 
   return (
-    <section className="w-full h-dvh bg-amber-50 px-48 py-20">
+    <section className="w-full h-dvh bg-amber-50 px-48 flex items-center justify-center">
       <div className="flex gap-3 flex-col justify-center w-full items-center">
         <h1 className="text-3xl">
           Predicting Chessboard Layouts from Screenshots
         </h1>
-        <div className="flex items-center cursor-pointer hover:scale-105 duration-100">
-          <label htmlFor="imageLoader" className="w-[35ch]">
+        <div
+          className={`flex items-center duration-100 ${
+            isPending
+              ? "cursor-not-allowed hover:scale-100"
+              : " hover:scale-105 cursor-pointer"
+          }`}
+        >
+          <label
+            htmlFor="imageLoader"
+            className={`w-[35ch] ${
+              isPending ? "cursor-not-allowed" : "cursor-pointer"
+            }`}
+          >
             Input screenshot file:
           </label>
           <Input
+            disabled={isPending}
             onChange={handleImageChange}
-            className="cursor-pointer"
+            className="cursor-pointer disabled:cursor-not-allowed"
             accept="image/*"
             id="imageLoader"
             name="imageLoader"
@@ -68,7 +98,9 @@ function App() {
           />
         </div>
         <div
-          className="cursor-pointer flex items-center justify-center border-5 rounded-3xl border-amber-950 w-[350px] h-[350px] bg-amber-100 shadow-md shadow-neutral-950"
+          className={`flex items-center justify-center border-5 rounded-3xl border-amber-950 w-[300px] h-[300px] bg-amber-100 shadow-md shadow-neutral-950 ${
+            isPending ? "cursor-not-allowed" : "cursor-pointer"
+          }`}
           onDragOver={handleDragOver}
           onDrop={handleDrop}
           onClick={() => document.getElementById("imageLoader")?.click()}
@@ -79,23 +111,29 @@ function App() {
             id="sobelCanvas"
           />
         </div>
-        <button
-          onClick={() =>
-            startTransition(() => {
-              if (resultCanvas.current) calculateFen(resultCanvas.current);
-            })
-          }
-          className="cursor-pointer shadow-md shadow-neutral-950 mt-3 px-4 bg-amber-300 border-2 rounded-lg border-amber-800 py-2 hover:shadow-sm hover:translate-y-1 text-amber-950 font-bold active:opacity-75"
+        <Button
+          disabled={isPending}
+          onClick={() => startTransition(handleCalculateFEN)}
         >
           Calculate FEN
-        </button>
-        <h2 className="text-lg">
-          FEN:{" "}
-          <span className="text-sm">
-            rn1qkb1r/p4ppb/1pp1pn1p/4N3/2BP2P1/1QN1P2P/PP3P2/R1B2RK1
-          </span>
+        </Button>
+        <h2 className="text-lg mb-2">
+          FEN: <span className="text-sm">{fenValue}</span>
         </h2>
-
+        <div className="flex gap-5">
+          {fenValue && (
+            <Anchor href={`https://lichess.org/analysis/${fenValue}_w`}>
+              <FaRegChessKnight size={32} />
+              Play as White
+            </Anchor>
+          )}
+          {fenValue && (
+            <Anchor href={`https://lichess.org/analysis/${fenValue}_b`}>
+              <FaChessBishop size={32} />
+              Play as Black
+            </Anchor>
+          )}
+        </div>
         <canvas className="hidden" ref={resultCanvas} id="resultCanvas" />
       </div>
     </section>

@@ -1,3 +1,5 @@
+import * as tf from "@tensorflow/tfjs";
+
 // Contains functions to find centered + aligned chessboards in uploaded images.
 export function findMax(arr, a, b) {
   // Assumes arr contains positives values.
@@ -35,4 +37,41 @@ export function findLines(squashed) {
   sX = squashed.x; // vertical lines, along x axis, squashed sum.
   sY = squashed.y; // horizontal lines, along y axis.
   // TODO.
+}
+
+export function getTiles(img_256x256) {
+  // TODO: This is a bit hacky, but we can reshape files properly so lets just reshape every
+  // file(column) and concat them together.
+  var files = []; // 8 columns.
+  // Note: Uses first channel, since it assumes images are grayscale.
+  for (var i = 0; i < 8; i++) {
+    // Entire (32*8)x32 file of 8 tiles, reshaped into an  8x1024 array
+    files[i] = img_256x256.slice([0, 0 + 32 * i, 0], [32 * 8, 32, 1]).reshape([8, 1024]);
+  }
+  return tf.concat(files); // Concatanate all 8 8x1024 arrays into 64x1024 array.
+}
+
+export function getLabeledPiecesAndFEN(predictions) {
+  // Build 2D array with piece prediction label for each tile, matching the input 256x256 image.
+  var pieces = [];
+  for (var rank = 8 - 1; rank >= 0; rank--) {
+    pieces[rank] = [];
+    for (var file = 0; file < 8; file++) {
+      // Convert integer prediction into labeled FEN notation.
+      pieces[rank][file] = '1KQRBNPkqrbnp'[predictions[rank + file * 8]]
+    }
+  }
+
+  // Build FEN notation and HTML links for analysis and visualization.
+  // Note: Does not contain castling information, lichess will automatically figure it out.
+  var basic_fen = pieces.map(x => x.join('')).join('/')
+    .replace(RegExp('11111111', 'g'), '8')
+    .replace(RegExp('1111111', 'g'), '7')
+    .replace(RegExp('111111', 'g'), '6')
+    .replace(RegExp('11111', 'g'), '5')
+    .replace(RegExp('1111', 'g'), '4')
+    .replace(RegExp('111', 'g'), '3')
+    .replace(RegExp('11', 'g'), '2');
+
+  return { piece_array: pieces, fen: basic_fen };
 }
