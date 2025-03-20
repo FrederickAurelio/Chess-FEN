@@ -8,20 +8,16 @@ export type ResponseFetchType = {
   };
 };
 
-export async function calculateFen(dataURL: string) {
+export async function calculateFen(dataURL: string, origin: string) {
   try {
-    const res = await fetch(
-      "https://chessfen-wlxlhmlrer.cn-hangzhou.fcapp.run/predict",
-      {
-        method: "POST",
-        body: JSON.stringify({ dataURL }),
-        headers: {
-          "Content-type": "application/json",
-        },
-      }
-    );
+    const res = await fetch(`${origin}/predict`, {
+      method: "POST",
+      body: JSON.stringify({ dataURL }),
+      headers: {
+        "Content-type": "application/json",
+      },
+    });
     const data = (await res.json()) as ResponseFetchType;
-    console.log(data);
     return data;
   } catch (error) {
     console.log(error);

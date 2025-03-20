@@ -21,7 +21,7 @@ function App() {
     if (imgFile && resultCanvas.current) {
       const dataURL = resultCanvas.current.toDataURL("image/png");
       try {
-        const res = await calculateFen(dataURL);
+        const res = await calculateFen(dataURL, window.location.href);
         setActionState(res);
       } catch (error) {
         console.error("Error calculating FEN:", error);

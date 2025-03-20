@@ -3,12 +3,11 @@ import * as tf from "@tensorflow/tfjs";
 import { getLabeledPiecesAndFEN, getTiles } from "../libfn";
 import sharp from "sharp";
 
-const baseUrl = "http://localhost:3001";
-const frozenGraph = `${baseUrl}/frozen_model/tensorflowjs_model.pb`;
-const weights = `${baseUrl}/frozen_model/weights_manifest.json`;
-
 export async function POST(req: Request) {
   try {
+    const { origin } = new URL(req.url);
+    const frozenGraph = `${origin}/frozen_model/tensorflowjs_model.pb`;
+    const weights = `${origin}/frozen_model/weights_manifest.json`;
     const { dataURL } = await req.json();
     let predictor: tf.FrozenModel | undefined;
     try {
